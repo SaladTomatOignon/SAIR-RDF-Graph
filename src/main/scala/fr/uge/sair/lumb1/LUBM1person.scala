@@ -2,8 +2,8 @@ package fr.uge.sair.lumb1
 
 import fr.uge.sair.faker.FakeData
 
-class LUBM1person(id: String, firstName: String, lastName: String, gender: String, zipcode: String,
-                       state: String, birthday: String, vaccinationDate: String, vaccine: String) {
+class LUBM1person(val id: String, val firstName: String, val lastName: String, val gender: String, val zipcode: String,
+                  val state: String, val birthday: String, val vaccinationDate: String, val vaccine: String) {
 
   val isVaccinated: Boolean = !vaccinationDate.isBlank
 }
@@ -13,15 +13,25 @@ object LUBM1person {
   val maleProportion = 48
   val vaccinesProportion = 10
 
+  // According to lubm1 data, the following types correspond to students
   val studentTypes = List("GraduateStudent", "UndergraduateStudent")
-  val professorTypes = List("TeachingAssistant", "AssociateProfessor", "ResearchAssistant", "FullProfessor", "Lecturer", "AssistantProfessor")
+  // According to lubm1 data, the following types correspond to students with an additional status
+  val advancedStudentTypes = List("TeachingAssistant", "ResearchAssistant")
+  // According to lubm1 data, the following types correspond to professors
+  val professorTypes = List("AssociateProfessor", "FullProfessor", "Lecturer", "AssistantProfessor")
 
-  def isStudent(personType: String) : Boolean = studentTypes.contains(personType)
-  def isProfessor(personType: String) : Boolean = professorTypes.contains(personType)
+  private def oneContains(lstA: List[String], lstB: List[String]) : Boolean = {
+    for (a <- lstA) if (lstB.contains(a)) return true
+    false
+  }
 
-  def apply(personType: String) : LUBM1person = {
-    val minAge = if (isStudent(personType)) 20 else if (isProfessor(personType)) 30 else throw new IllegalArgumentException("Invalid person type")
-    val maxAge = if (isStudent(personType)) 30 else if (isProfessor(personType)) 70 else throw new IllegalArgumentException("Invalid person type")
+  def isStudent(personTypes: List[String]) : Boolean = oneContains(personTypes, studentTypes)
+  def isAdvancedStudent(personTypes: List[String]) : Boolean = oneContains(personTypes, advancedStudentTypes)
+  def isProfessor(personTypes: List[String]) : Boolean = oneContains(personTypes, professorTypes)
+
+  def apply(personTypes: List[String]) : LUBM1person = {
+    val minAge = if (isAdvancedStudent(personTypes)) 20 else if (isStudent(personTypes)) 25 else if (isProfessor(personTypes)) 30 else throw new IllegalArgumentException("Invalid person type")
+    val maxAge = if (isStudent(personTypes) || isAdvancedStudent(personTypes)) 30 else if (isProfessor(personTypes)) 70 else throw new IllegalArgumentException("Invalid person type")
     val isVaccinated = fakeData.faker.random.nextInt(101) < vaccinesProportion
 
     new LUBM1person(fakeData.id().toString,
