@@ -19,7 +19,6 @@ class LUBM1graph(source: String, language: String) extends RDFgraph(source, lang
     listPersons.distinct.toList
   }
 
-
   def getPersonTypes(person: Resource) : List[Resource] = {
     val rdfTypeProperty = model.createProperty(LUBM1graph.typeProperty)
     var listPersonTypes = ListBuffer[Resource]()
@@ -48,21 +47,19 @@ class LUBM1graph(source: String, language: String) extends RDFgraph(source, lang
     })
   }
 
-  def getGender(person : Resource): Resource = {
+  def getPersonGender(person: Resource): Resource = {
     val rdfGenderProperty = model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "gender")
     model.listObjectsOfProperty(person,rdfGenderProperty).nextNode().asResource()
   }
-  def isPersonVaccinated (person : Resource): Boolean = {
-    val rdfGenderProperty = model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "vaccine")
+
+  def isPersonVaccinated(person: Resource): Boolean = {
+    val rdfGenderProperty = model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "vaccinationDate")
     model.listObjectsOfProperty(person, rdfGenderProperty).hasNext
-
   }
-
 }
 
-
 object LUBM1graph {
-  val source: String = "/Users/amanymiled/Desktop/SAIR-RDF-Graph/src/main/resources/lubm1.ttl"
+  val source: String = getClass.getResource("/lubm1.ttl").getPath
   val language = "TTL"
 
   val occupations = List("TeachingAssistant", "GraduateStudent", "UndergraduateStudent", "AssociateProfessor",
