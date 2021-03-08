@@ -6,6 +6,10 @@ class LUBM1person(val id: String, val firstName: String, val lastName: String, v
                   val state: String, val birthday: String, val vaccinationDate: String, val vaccine: String) {
 
   val isVaccinated: Boolean = !vaccinationDate.isBlank
+
+  def getRecordWithFakeSideEffect: LUBM1record = {
+    LUBM1record(id, firstName, lastName, vaccinationDate, vaccine, LUBM1person.fakeData.siderEffectCode())
+  }
 }
 
 object LUBM1person {

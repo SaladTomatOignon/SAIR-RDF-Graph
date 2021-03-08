@@ -44,6 +44,12 @@ class FakeData(locale: Locale) {
     val random = faker.random().nextDouble()
     vaccinesRepartitionCumul.find(v => random <= v._2).get._1
   }
+
+  def siderEffectCode(): String = {
+    val randIndex = faker.random().nextInt(FakeData.siderEffects.length)
+
+    FakeData.siderEffects(randIndex)._1
+  }
 }
 
 object FakeData {
@@ -52,6 +58,11 @@ object FakeData {
 
   val vaccinesRepartition = List(("Pfizer", 0.2), ("Moderna", 0.12), ("AstraZeneca", 0.45),
                                  ("SpoutnikV", 0.15), ("CanSinoBio", 0.08))
+
+  val siderEffects = List(("C0151828", "Injection site pain"), ("C0015672", "fatigue"), ("C0018681", "headache"), ("C0231528", "Muscle pain"),
+                          ("C0085593", "chills"), ("C0003862", "Joint pain"), ("C0015967", "fever"), ("C0151605", "Injection site swelling"),
+                          ("C0852625", "Injection site redness"), ("C0027497", "Nausea"), ("C0231218", "Malaise"), ("C0497156", "Lymphadenopathy"),
+                          ("C0863083", "Injection site tenderness"))
 
   def apply(): FakeData = new FakeData(Locale.FRENCH)
 }
