@@ -1,11 +1,17 @@
 package fr.uge.sair.lumb1
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import fr.uge.sair.faker.FakeData
 
-class LUBM1person(val id: String, val firstName: String, val lastName: String, val gender: String, val zipcode: String,
-                  val state: String, val birthday: String, val vaccinationDate: String, val vaccine: String) {
+case class LUBM1person(id: String, firstName: String, lastName: String, gender: String, zipcode: String, state: String,
+                       birthday: String, vaccinationDate: String, vaccine: String, sideEffectCode: String = null) {
 
+  @JsonIgnore
   val isVaccinated: Boolean = !vaccinationDate.isBlank
+
+  def generateRecordWithFakeSideEffect: SideEffectRecord = {
+    SideEffectRecord(id, firstName, lastName, vaccinationDate, vaccine, LUBM1person.fakeData.siderEffectCode())
+  }
 }
 
 object LUBM1person {

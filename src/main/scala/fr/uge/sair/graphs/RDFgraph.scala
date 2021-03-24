@@ -1,5 +1,7 @@
 package fr.uge.sair.graphs
 
+import java.io.FileOutputStream
+
 import org.apache.jena.rdf.model.{Model, ModelFactory}
 
 import scala.collection.mutable.ListBuffer
@@ -20,5 +22,11 @@ class RDFgraph(val source: String, val language: String) {
     }
 
     properties
+  }
+
+  def export(path: String) = {
+    val outputStream = new FileOutputStream(path)
+    model.write(outputStream, "N-TRIPLE")
+    outputStream.close()
   }
 }

@@ -32,29 +32,58 @@ class LUBM1graph(source: String, language: String) extends RDFgraph(source, lang
     listPersons().foreach(person => {
       val fakePerson = LUBM1person(getPersonTypes(person).map(_.getLocalName))
 
-      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "id"), model.createLiteral(fakePerson.id))
-      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "fName"), model.createLiteral(fakePerson.firstName))
-      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "lName"), model.createLiteral(fakePerson.lastName))
-      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "gender"), model.createResource(LUBM1graph.extensionPropertyNamespace + "#" + fakePerson.gender))
-      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "zipcode"), model.createLiteral(fakePerson.zipcode))
-      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "state"), model.createLiteral(fakePerson.state))
-      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "birthday"), model.createLiteral(fakePerson.birthday))
+      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.ID), model.createLiteral(fakePerson.id))
+      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.FIRST_NAME), model.createLiteral(fakePerson.firstName))
+      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.LAST_NAME), model.createLiteral(fakePerson.lastName))
+      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.GENDER), model.createResource(LUBM1graph.extensionPropertyNamespace + "#" + fakePerson.gender))
+      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.ZIPCODE), model.createLiteral(fakePerson.zipcode))
+      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.STATE), model.createLiteral(fakePerson.state))
+      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.BIRTHDAY), model.createLiteral(fakePerson.birthday))
 
       if (fakePerson.isVaccinated) {
-        model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "vaccinationDate"), model.createLiteral(fakePerson.vaccinationDate))
-        model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "vaccine"), model.createResource(LUBM1graph.extensionPropertyNamespace + "#" + fakePerson.vaccine))
+        model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.VACCINATION_DATE), model.createLiteral(fakePerson.vaccinationDate))
+        model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.VACCINE), model.createResource(LUBM1graph.extensionPropertyNamespace + "#" + fakePerson.vaccine))
       }
     })
   }
 
   def getPersonGender(person: Resource): Resource = {
-    val rdfGenderProperty = model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "gender")
+    val rdfGenderProperty = model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.GENDER)
     model.listObjectsOfProperty(person,rdfGenderProperty).nextNode().asResource()
   }
 
   def isPersonVaccinated(person: Resource): Boolean = {
-    val rdfGenderProperty = model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + "vaccinationDate")
+    val rdfGenderProperty = model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.VACCINATION_DATE)
     model.listObjectsOfProperty(person, rdfGenderProperty).hasNext
+  }
+
+  def getVaccinatedPersons: List[Resource] = {
+    val rdfVaccineProperty = model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.VACCINATION_DATE)
+    var listPersons = ListBuffer[Resource]()
+
+    model.listSubjectsWithProperty(rdfVaccineProperty).forEach(person => listPersons += person)
+
+    listPersons.toList
+  }
+
+  def getVaccinatedLUBM1Persons: List[LUBM1person] = {
+    var listPersons = ListBuffer[LUBM1person]()
+
+    getVaccinatedPersons.foreach(person => {
+      listPersons += new LUBM1person(
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.ID)).next.asLiteral.getString,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.FIRST_NAME)).next.asLiteral.getString,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.LAST_NAME)).next.asLiteral.getString,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.GENDER)).next.asResource.getLocalName,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.ZIPCODE)).next.asLiteral.getString,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.STATE)).next.asLiteral.getString,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.BIRTHDAY)).next.asLiteral.getString,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.VACCINATION_DATE)).next.asLiteral.getString,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.VACCINE)).next.asResource.getLocalName
+      )
+    })
+
+    listPersons.toList
   }
 }
 
@@ -70,4 +99,16 @@ object LUBM1graph {
   val extensionPropertyNamespace = "http://extension.group4.fr/onto"
 
   def apply(): LUBM1graph = new LUBM1graph("file:" + source, language)
+
+  object Fragments {
+    val ID = "id"
+    val FIRST_NAME = "fname"
+    val LAST_NAME = "lname"
+    val GENDER = "gender"
+    val ZIPCODE = "zipcode"
+    val STATE = "state"
+    val BIRTHDAY = "birthday"
+    val VACCINATION_DATE = "vaccinationDate"
+    val VACCINE = "vaccine"
+  }
 }
