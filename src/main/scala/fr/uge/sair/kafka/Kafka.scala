@@ -1,22 +1,26 @@
 package fr.uge.sair.kafka
 
+import fr.uge.sair.data.Vaccine
 import fr.uge.sair.kafka.streams.{LUBM1stream, SideEffectStream}
 import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
-import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
+import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 
 import java.util.Properties
 import java.util.concurrent.{ExecutionException, TimeUnit}
+import java.util.function.Consumer
 import scala.collection.JavaConverters.{asScalaSet, seqAsJavaListConverter}
 
 object Kafka {
   val appName: String = "LUBM-Vaccinations"
   private var kafkaStreams: Option[KafkaStreams] = None
   private var admin: Option[AdminClient] = None
-  var consumersGroup: Option[Array[KafkaConsumer[String, String]]] = None
-  var producer: Option[KafkaProducer[String, String]] = None
+  private var consumersGroup: Option[Array[KafkaConsumer[String, String]]] = None
+  private var consumersGroupThreads: Option[Array[PollingThread[String, String]]] = None
+  var recordConsumer: Option[Consumer[ConsumerRecord[String, String]]] = None
+  private[this] var _producer: Option[KafkaProducer[String, String]] = None
 
   private def properties: Properties = {
     val props = new Properties()
@@ -34,12 +38,17 @@ object Kafka {
     props
   }
 
+  /**
+   * Creates, if not exist, the 4 topics of this program,
+   * with as many partitions as there are vaccines, for each of them.
+   */
   private def initTopics(): Unit = {
+    val nbPartitions = Vaccine.values.size
     val topics = List(
-      new NewTopic(LUBM1stream.inputTopicName, 5, 1.toShort),
-      new NewTopic(LUBM1stream.outputTopicName, 5, 1.toShort),
-      new NewTopic(SideEffectStream.inputTopicName, 5, 1.toShort),
-      new NewTopic(SideEffectStream.outputTopicName, 5, 1.toShort)
+      new NewTopic(LUBM1stream.inputTopicName, nbPartitions, 1.toShort),
+      new NewTopic(LUBM1stream.outputTopicName, nbPartitions, 1.toShort),
+      new NewTopic(SideEffectStream.inputTopicName, nbPartitions, 1.toShort),
+      new NewTopic(SideEffectStream.outputTopicName, nbPartitions, 1.toShort)
     )
 
     var existingsTopics = this.admin.get.listTopics().names().get()
@@ -55,23 +64,31 @@ object Kafka {
           ).toList.asJava
           this.admin.get.deleteTopics(topicsToRemove).all().get()
 
-          // Sleep time because this deleteTopics() method does not perform his action despite the get() method call
+          // Sleep time because this deleteTopics() method does not fully perform its action despite the get() method call
           TimeUnit.MILLISECONDS.sleep(1000)
           this.admin.get.createTopics(topics.asJava).all().get()
       }
     }
   }
 
+  def producer: KafkaProducer[String, String] = _producer.get
+
   private def initProducers(): Unit = {
-    this.producer = Some(new KafkaProducer[String, String](properties))
+    this._producer = Some(new KafkaProducer[String, String](properties))
+  }
+
+  def setConsumingFunction(consumer: Consumer[ConsumerRecord[String, String]]): Unit = {
+    this.consumersGroupThreads.get.foreach(pollingThread => pollingThread.recordConsumer = Some(consumer))
   }
 
   private def initConsumers(): Unit = {
-    this.consumersGroup = Some(new Array[KafkaConsumer[String, String]](5))
+    this.consumersGroup = Some(new Array[KafkaConsumer[String, String]](Vaccine.values.size))
+    this.consumersGroupThreads = Some(new Array[PollingThread[String, String]](Vaccine.values.size))
 
     for (i <- this.consumersGroup.get.indices) {
       this.consumersGroup.get(i) = new KafkaConsumer[String, String](properties)
       this.consumersGroup.get(i).assign(List(new TopicPartition(LUBM1stream.outputTopicName, i)).asJava)
+      this.consumersGroupThreads.get(i) = new PollingThread[String, String](this.consumersGroup.get(i))
     }
   }
 
@@ -94,9 +111,17 @@ object Kafka {
     this.kafkaStreams.get.start()
   }
 
+  def startPolling(): Unit = {
+    this.consumersGroupThreads.get.foreach(pollingThread => pollingThread.start())
+  }
+
+  def stopPolling(): Unit = {
+    this.consumersGroupThreads.get.foreach(pollingThread => pollingThread.interrupt())
+  }
+
   def close(): Unit = {
     this.admin.get.close()
-    this.producer.get.close()
+    this._producer.get.close()
     this.consumersGroup.get.foreach(consumer => consumer.close())
     this.kafkaStreams.get.close()
   }
