@@ -10,6 +10,8 @@ val jacksonVersion = "2.12.2"
 val avroVersion = "0.9.7"
 val sparkVersion = "3.1.1"
 val kafkaVersion = "2.7.0"
+val avroSerializerVersion = "6.1.1"
+val bijectionAvroVersion = "0.9.7"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
 
@@ -17,7 +19,8 @@ libraryDependencies += "org.apache.jena" % "jena-core" % jenaVersion
 libraryDependencies += "com.github.javafaker" % "javafaker" % javafakerVersion
 libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion
 libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion
-libraryDependencies += "com.twitter" %% "bijection-avro" % avroVersion
 libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion
 libraryDependencies += "org.apache.spark" %% "spark-avro" % sparkVersion
 libraryDependencies += "org.apache.kafka" % "kafka-streams" % kafkaVersion
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % kafkaVersion
+libraryDependencies += "com.twitter" %% "bijection-avro" % bijectionAvroVersion

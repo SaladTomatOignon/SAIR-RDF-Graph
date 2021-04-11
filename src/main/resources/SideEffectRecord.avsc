@@ -1,0 +1,14 @@
+{
+    "namespace": "fr.uge.sair",
+    "name": "SideEffectRecord",
+    "doc": "Record that associates a person with a vaccine and eventually a side effect",
+    "type": "record",
+    "fields": [
+        {"name": "id", "type": "int"},
+        {"name": "firstName", "type": ["string", "null"]},
+        {"name": "lastName", "type": ["string", "null"]},
+        {"name": "vaccinationDate", "type": "string"},
+        {"name": "vaccine", "type": "string"},
+        {"name": "siderCode", "type": "string"}
+    ]
+}

@@ -32,7 +32,7 @@ class LUBM1graph(source: String, language: String) extends RDFgraph(source, lang
     listPersons().foreach(person => {
       val fakePerson = LUBM1person(getPersonTypes(person).map(_.getLocalName))
 
-      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.ID), model.createLiteral(fakePerson.id))
+      model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.ID), model.createLiteral(fakePerson.id.toString))
       model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.FIRST_NAME), model.createLiteral(fakePerson.firstName))
       model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.LAST_NAME), model.createLiteral(fakePerson.lastName))
       model.add(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.GENDER), model.createResource(LUBM1graph.extensionPropertyNamespace + "#" + fakePerson.gender))
@@ -71,7 +71,7 @@ class LUBM1graph(source: String, language: String) extends RDFgraph(source, lang
 
     getVaccinatedPersons.foreach(person => {
       listPersons += new LUBM1person(
-        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.ID)).next.asLiteral.getString,
+        model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.ID)).next.asLiteral.getInt,
         model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.FIRST_NAME)).next.asLiteral.getString,
         model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.LAST_NAME)).next.asLiteral.getString,
         model.listObjectsOfProperty(person, model.createProperty(LUBM1graph.extensionPropertyNamespace + "#" + LUBM1graph.Fragments.GENDER)).next.asResource.getLocalName,

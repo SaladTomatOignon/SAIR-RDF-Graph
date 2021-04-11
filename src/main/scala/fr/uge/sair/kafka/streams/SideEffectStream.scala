@@ -2,6 +2,7 @@ package fr.uge.sair.kafka.streams
 
 import fr.uge.sair.lumb1.SideEffectRecord
 import fr.uge.sair.serialization.JacksonSerializer
+import fr.uge.sair.serialization.avroSchemas.SideEffectSchema
 import org.apache.kafka.common.serialization.{Serde, Serdes}
 import org.apache.kafka.streams.kstream.{Consumed, Produced, ValueMapper}
 
@@ -14,29 +15,29 @@ import org.apache.kafka.streams.kstream.{Consumed, Produced, ValueMapper}
  */
 class SideEffectStream extends Stream {
   val stringSerde: Serde[String] = Serdes.String()
+  val bytesSerde: Serde[Array[Byte]] = Serdes.ByteArray()
 
   override val inputTopicName: String = SideEffectStream.inputTopicName
   override val outputTopicName: String = SideEffectStream.outputTopicName
 
   override def build(): Unit = {
     // Source input
-    val sourceProcessor = getBuilder.stream[String, String](inputTopicName, Consumed.`with`(stringSerde, stringSerde))
+    val sourceProcessor = getBuilder.stream[String, Array[Byte]](inputTopicName, Consumed.`with`(stringSerde, bytesSerde))
 
     // Anonymizing the stream (= removing firstName and lastName from record)
-    val anonymizedNode = sourceProcessor.mapValues[String](
-      new ValueMapper[String, String]() {
-        override def apply(value: String): String = {
-          val mapper = JacksonSerializer.mapper
-          val sideEffectRecord = mapper.readValue(value, classOf[SideEffectRecord])
+    val anonymizedNode = sourceProcessor.mapValues[Array[Byte]](
+      new ValueMapper[Array[Byte], Array[Byte]]() {
+        override def apply(value: Array[Byte]): Array[Byte] = {
+          val sideEffectRecord = SideEffectRecord.fromRecord(SideEffectSchema().recordInjection.invert(value).get)
 
-          mapper.writeValueAsString(SideEffectRecord(
-            sideEffectRecord.id, null, null, sideEffectRecord.vaccinationDate, sideEffectRecord.vaccine, sideEffectRecord.siderCode))
+          SideEffectSchema().recordInjection.apply(SideEffectRecord(
+            sideEffectRecord.id, null, null, sideEffectRecord.vaccinationDate, sideEffectRecord.vaccine, sideEffectRecord.siderCode).toRecord)
         }
       }
     )
 
     // Writing the result to a new topic
-    anonymizedNode.to(outputTopicName, Produced.`with`(stringSerde, stringSerde))
+    anonymizedNode.to(outputTopicName, Produced.`with`(stringSerde, bytesSerde))
   }
 }
 

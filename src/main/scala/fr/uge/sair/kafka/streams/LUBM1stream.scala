@@ -2,6 +2,7 @@ package fr.uge.sair.kafka.streams
 
 import fr.uge.sair.lumb1.{LUBM1person, SideEffectRecord}
 import fr.uge.sair.serialization.JacksonSerializer
+import fr.uge.sair.serialization.avroSchemas.{Lubm1personSchema, SideEffectSchema}
 import org.apache.kafka.common.serialization.{Serde, Serdes}
 import org.apache.kafka.streams.kstream.{Consumed, JoinWindows, Produced, StreamJoined, ValueJoiner}
 
@@ -16,37 +17,48 @@ import java.time.Duration
  */
 class LUBM1stream extends Stream {
   val stringSerde: Serde[String] = Serdes.String()
+  val bytesSerde: Serde[Array[Byte]] = Serdes.ByteArray()
 
   override val inputTopicName: String = LUBM1stream.inputTopicName
   override val outputTopicName: String = LUBM1stream.outputTopicName
 
   override def build(): Unit = {
     // Source input
-    val sourceProcessor = getBuilder.stream[String, String](inputTopicName, Consumed.`with`(stringSerde, stringSerde))
-    val sideEffectStream = getBuilder.stream[String, String](SideEffectStream.outputTopicName, Consumed.`with`(stringSerde, stringSerde))
+    val sourceProcessor = getBuilder.stream[String, Array[Byte]](inputTopicName, Consumed.`with`(stringSerde, bytesSerde))
+    val sideEffectStream = getBuilder.stream[String, Array[Byte]](SideEffectStream.outputTopicName, Consumed.`with`(stringSerde, bytesSerde))
 
     // Joining node : it joins records of this stream and of the SideEffectStream with same IDs
-    val joinNode = sourceProcessor.join[String, String](sideEffectStream, new ValueJoiner[String, String, String]() {
-      override def apply(value1: String, value2: String): String = {
-        val mapper = JacksonSerializer.mapper
-        val lubm1person = mapper.readValue(value1, classOf[LUBM1person])
-        val sideEffectRecord = mapper.readValue(value2, classOf[SideEffectRecord])
-
-        if (lubm1person.id.equals(sideEffectRecord.id)) {
-          mapper.writeValueAsString(lubm1person.copy(sideEffectCode = sideEffectRecord.siderCode))
-        } else {
-          ""
-        }
-      }
-    }, JoinWindows.of(Duration.ofMillis(LUBM1stream.joinWindowInterval)), StreamJoined.`with`[String, String, String](stringSerde, stringSerde, stringSerde))
+    val joinNode = sourceProcessor.join[Array[Byte], Array[Byte]](
+      sideEffectStream,
+      valueJoiner,
+      JoinWindows.of(Duration.ofMillis(LUBM1stream.joinWindowInterval)),
+      StreamJoined.`with`[String, Array[Byte], Array[Byte]](stringSerde, bytesSerde, bytesSerde)
+    )
 
     // Filtering empty records, which represents here the values which could not be joined (because of different IDs)
-    val filteredStream = joinNode.filter((k: String, v:String) => {
+    val filteredStream = joinNode.filter((k: String, v:Array[Byte]) => {
       v.nonEmpty
     })
 
     // Writing the result to a new topic
-    filteredStream.to(outputTopicName, Produced.`with`[String, String](stringSerde, stringSerde))
+    filteredStream.to(outputTopicName, Produced.`with`[String, Array[Byte]](stringSerde, bytesSerde))
+  }
+
+  val valueJoiner: ValueJoiner[Array[Byte], Array[Byte], Array[Byte]] = {
+    new ValueJoiner[Array[Byte], Array[Byte], Array[Byte]]() {
+      override def apply(value1: Array[Byte], value2: Array[Byte]): Array[Byte] = {
+        val lubm1person = LUBM1person.fromRecord(Lubm1personSchema().recordInjection.invert(value1).get)
+        val sideEffectRecord = SideEffectRecord.fromRecord(SideEffectSchema().recordInjection.invert(value2).get)
+
+        if (lubm1person.id.equals(sideEffectRecord.id)) {
+          Lubm1personSchema().recordInjection.apply(
+            lubm1person.copy(sideEffectCode = sideEffectRecord.siderCode).toRecord
+          )
+        } else {
+          new Array[Byte](0)
+        }
+      }
+    }
   }
 }
 

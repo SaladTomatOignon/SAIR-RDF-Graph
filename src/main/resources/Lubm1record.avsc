@@ -1,0 +1,18 @@
+{
+    "namespace": "fr.uge.sair",
+    "name": "LUBM1record",
+    "doc": "Record that represents a LUBM1 person",
+    "type": "record",
+    "fields": [
+        {"name": "id", "type": "int"},
+        {"name": "firstName", "type": "string"},
+        {"name": "lastName", "type": "string"},
+        {"name": "gender", "type": "string"},
+        {"name": "zipcode", "type": "string"},
+        {"name": "state", "type": "string"},
+        {"name": "birthday", "type": "string"},
+        {"name": "vaccinationDate", "type": "string"},
+        {"name": "vaccine", "type": "string"},
+        {"name": "siderCode", "type": ["string", "null"]}
+    ]
+}

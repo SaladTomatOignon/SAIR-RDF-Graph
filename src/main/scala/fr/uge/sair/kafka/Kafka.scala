@@ -6,7 +6,7 @@ import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
 import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
+import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer, BytesDeserializer, BytesSerializer, StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 
 import java.util.Properties
@@ -18,10 +18,10 @@ object Kafka {
   val appName: String = "LUBM-Vaccinations"
   private var kafkaStreams: Option[KafkaStreams] = None
   private var admin: Option[AdminClient] = None
-  private var consumersGroup: Option[Array[KafkaConsumer[String, String]]] = None
-  private var consumersGroupThreads: Option[Array[PollingThread[String, String]]] = None
-  var recordConsumer: Option[Consumer[ConsumerRecord[String, String]]] = None
-  private[this] var _producer: Option[KafkaProducer[String, String]] = None
+  private var consumersGroup: Option[Array[KafkaConsumer[String, Array[Byte]]]] = None
+  private var consumersGroupThreads: Option[Array[PollingThread[String, Array[Byte]]]] = None
+  var recordConsumer: Option[Consumer[ConsumerRecord[String, Array[Byte]]]] = None
+  private[this] var _producer: Option[KafkaProducer[String, Array[Byte]]] = None
 
   private def properties: Properties = {
     val props = new Properties()
@@ -33,8 +33,8 @@ object Kafka {
 
     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getCanonicalName)
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getCanonicalName)
-    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getCanonicalName)
-    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getCanonicalName)
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[ByteArraySerializer].getCanonicalName)
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, classOf[ByteArrayDeserializer].getCanonicalName)
 
     props
   }
@@ -72,24 +72,24 @@ object Kafka {
     }
   }
 
-  def producer: KafkaProducer[String, String] = _producer.get
+  def producer: KafkaProducer[String, Array[Byte]] = _producer.get
 
   private def initProducers(): Unit = {
-    this._producer = Some(new KafkaProducer[String, String](properties))
+    this._producer = Some(new KafkaProducer[String, Array[Byte]](properties))
   }
 
-  def setConsumingFunction(consumer: Consumer[ConsumerRecord[String, String]]): Unit = {
+  def setConsumingFunction(consumer: Consumer[ConsumerRecord[String, Array[Byte]]]): Unit = {
     this.consumersGroupThreads.get.foreach(pollingThread => pollingThread.recordConsumer = Some(consumer))
   }
 
   private def initConsumers(): Unit = {
-    this.consumersGroup = Some(new Array[KafkaConsumer[String, String]](Vaccine.values.size))
-    this.consumersGroupThreads = Some(new Array[PollingThread[String, String]](Vaccine.values.size))
+    this.consumersGroup = Some(new Array[KafkaConsumer[String, Array[Byte]]](Vaccine.values.size))
+    this.consumersGroupThreads = Some(new Array[PollingThread[String, Array[Byte]]](Vaccine.values.size))
 
     for (i <- this.consumersGroup.get.indices) {
-      this.consumersGroup.get(i) = new KafkaConsumer[String, String](properties)
+      this.consumersGroup.get(i) = new KafkaConsumer[String, Array[Byte]](properties)
       this.consumersGroup.get(i).assign(List(new TopicPartition(LUBM1stream.outputTopicName, i)).asJava)
-      this.consumersGroupThreads.get(i) = new PollingThread[String, String](this.consumersGroup.get(i))
+      this.consumersGroupThreads.get(i) = new PollingThread[String, Array[Byte]](this.consumersGroup.get(i))
     }
   }
 
