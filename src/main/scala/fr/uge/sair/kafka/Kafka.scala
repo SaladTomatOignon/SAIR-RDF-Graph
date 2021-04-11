@@ -6,6 +6,7 @@ import org.apache.kafka.clients.admin.{AdminClient, NewTopic}
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig}
 
 import java.util.Properties
@@ -28,12 +29,12 @@ object Kafka {
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "Vaccines-consumers")
 
-    props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, "fr.uge.sair.kafka.VaccinePartitioner")
+    props.put(ProducerConfig.PARTITIONER_CLASS_CONFIG, classOf[VaccinePartitioner].getCanonicalName)
 
-    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer")
-    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer")
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getCanonicalName)
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getCanonicalName)
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getCanonicalName)
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getCanonicalName)
 
     props
   }

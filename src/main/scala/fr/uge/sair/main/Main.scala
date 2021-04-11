@@ -23,16 +23,16 @@ object Main extends App {
 
   // Supplying data to the first topic with LUBM1 persons (static data)
   graph.getVaccinatedLUBM1Persons.foreach(person => {
-    Kafka.producer.send(new ProducerRecord[String, String](SideEffectStream.inputTopicName,
+    Kafka.producer.send(new ProducerRecord[String, String](LUBM1stream.inputTopicName,
       person.vaccine,
-      JacksonSerializer.mapper.writeValueAsString(person.generateRecordWithFakeSideEffect)))
+      JacksonSerializer.mapper.writeValueAsString(person)))
   })
 
   // Supplying data to the second topic with the side effects records (dynamic data)
   graph.getVaccinatedLUBM1Persons.foreach(person => {
-    Kafka.producer.send(new ProducerRecord[String, String](LUBM1stream.inputTopicName,
+    Kafka.producer.send(new ProducerRecord[String, String](SideEffectStream.inputTopicName,
       person.vaccine,
-      JacksonSerializer.mapper.writeValueAsString(person)))
+      JacksonSerializer.mapper.writeValueAsString(person.generateRecordWithFakeSideEffect)))
   })
 
   Kafka.setConsumingFunction(record => {
