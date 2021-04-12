@@ -114,6 +114,23 @@ sbt run
 
 Or you can use an IDE to build and run like IntelliJ.
 
+___
+
+Known issue : If you get "_File not found : lubm1.ttl_" message error at execution, then find the **LUBM1graph** class (_fr.uge.sair.graphs.LUBM1graph_) and edit the path to the lubm1.ttl file at line 91, which is located at _src/main/resources/lubm1.ttl_.
+
+For instance, find this line :
+
+```scala
+val source: String = getClass.getResource("/lubm1.ttl").getPath
+```
+
+And edit it with a relative path :
+
+```scala
+val source: String = "src/main/resources/lubm1.ttl"
+```
+___
+
 The program will show the generated records, consumed by the last topic, in an infinite loop.
 Enter any value to kill the threads and to stop the program.
 
